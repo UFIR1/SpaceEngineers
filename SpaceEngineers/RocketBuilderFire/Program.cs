@@ -129,7 +129,7 @@ namespace SpaceEngineers.RocketBuilderFire
                     MissileNumber = 0,
                     Target = new TargetMessage()
                     {
-                        X = 
+                        X = 0
                     }
                 };
                 IGC.SendBroadcastMessage(AutoPilotFireTag, message.Serealize(), TransmissionDistance.TransmissionDistanceMax);
