@@ -14,7 +14,7 @@ using VRage.Game.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 
 
-namespace SpaceEngineers.VehicleBaseController
+namespace SpaceEngineers.BaseEnergyGen
 {
     public sealed class Program : MyGridProgram
     {

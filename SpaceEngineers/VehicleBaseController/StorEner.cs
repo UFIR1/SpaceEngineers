@@ -16,7 +16,7 @@ using Sandbox.Game.Entities;
 using VRage.Game.Voxels;
 using VRage;
 
-namespace SpaceEngineers.BaseEnergy
+namespace SpaceEngineers.VehicleBaseController
 {
     public sealed class Program : MyGridProgram
     {
