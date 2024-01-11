@@ -28,7 +28,7 @@ namespace SpaceEngineers.RocketBuilderFire
 
 
         //
-        const string Cockpit = "Кокпит";
+        const string ВebugMissileLcd = "Transparent Display";
         const string WeldersGroup = "Welders";
         const string PistonName = "ПоршеньЗаправщик";
         const string ConnectorName = "Малый коннектор заправщик";
@@ -73,7 +73,7 @@ namespace SpaceEngineers.RocketBuilderFire
             grinder = GridTerminalSystem.GetBlockWithName(Grinder) as IMyFunctionalBlock;
             hinge = GridTerminalSystem.GetBlockWithName(Hinge) as IMyMotorStator;
             missileCatcher = GridTerminalSystem.GetBlockWithName(MissileCatcher) as IMyLandingGear;
-            debugMissileLcd = (GridTerminalSystem.GetBlockWithName(Cockpit) as IMyTextSurfaceProvider).GetSurface(1);
+            debugMissileLcd = (GridTerminalSystem.GetBlockWithName(ВebugMissileLcd) as IMyTextSurfaceProvider).GetSurface(0);
             var debugLcd = (Me).GetSurface(0);
             debugLcd.WriteText(CombineStrings(
                 $"piston:{piston != null}",
@@ -129,7 +129,9 @@ namespace SpaceEngineers.RocketBuilderFire
                     MissileNumber = 0,
                     Target = new TargetMessage()
                     {
-                        X = 
+                        X = -18004.59f,
+                        Y = -55104.97f,
+                        Z = 20685.08f
                     }
                 };
                 IGC.SendBroadcastMessage(AutoPilotFireTag, message.Serealize(), TransmissionDistance.TransmissionDistanceMax);
