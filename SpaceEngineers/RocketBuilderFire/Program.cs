@@ -13,6 +13,8 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using Sandbox.Game.Entities.Cube;
+using System.Linq;
+using VRage.Scripting;
 
 namespace SpaceEngineers.RocketBuilderFire
 {
@@ -28,7 +30,8 @@ namespace SpaceEngineers.RocketBuilderFire
 
 
         //
-        const string ВebugMissileLcd = "Transparent Display";
+        const string Cockpit = "Кокпит";
+        const string DebugMissileLcd = "Transparent Display";
         const string WeldersGroup = "Welders";
         const string PistonName = "ПоршеньЗаправщик";
         const string ConnectorName = "Малый коннектор заправщик";
@@ -38,7 +41,7 @@ namespace SpaceEngineers.RocketBuilderFire
         const string MissileHydrogenTank = "Missile Hydrogen Tank";
         const string MissileHydrogenThruster = "Missile Hydrogen Thruster";
         const string MissileWarhead = "Missile Warhead HE";
-
+        const string MissileProgrammableBlock = "Missile Programmable Block";
 
         float pistonVelocity = 0.5f;
 
@@ -46,6 +49,7 @@ namespace SpaceEngineers.RocketBuilderFire
         const string GuidFireTag = nameof(GuidFireTag);
         const string AutoPilotFireTag = nameof(AutoPilotFireTag);
         const string DebugMissileTag = nameof(DebugMissileTag);
+        const string ArmoredTag = nameof(ArmoredTag);
 
         List<IMyFunctionalBlock> welders = new List<IMyFunctionalBlock>();
         IMyPistonBase piston;
@@ -56,9 +60,12 @@ namespace SpaceEngineers.RocketBuilderFire
 
         IMyBroadcastListener GuideFireListener;
         IMyBroadcastListener DebugMissileListener;
+        IMyBroadcastListener ArmoredMissileListener;
 
         IMyTextSurface debugMissileLcd;
+        IMyTextSurface debugCarLcd;
 
+        public List<long> missileIds = new List<long>();
 
         public Program()
         {
@@ -66,6 +73,8 @@ namespace SpaceEngineers.RocketBuilderFire
 
             GuideFireListener = IGC.RegisterBroadcastListener(GuidFireTag);
             DebugMissileListener = IGC.RegisterBroadcastListener(DebugMissileTag);
+            ArmoredMissileListener = IGC.RegisterBroadcastListener(ArmoredTag);
+
 
             GridTerminalSystem.GetBlockGroupWithName(WeldersGroup).GetBlocksOfType(welders);
             piston = GridTerminalSystem.GetBlockWithName(PistonName) as IMyPistonBase;
@@ -73,7 +82,8 @@ namespace SpaceEngineers.RocketBuilderFire
             grinder = GridTerminalSystem.GetBlockWithName(Grinder) as IMyFunctionalBlock;
             hinge = GridTerminalSystem.GetBlockWithName(Hinge) as IMyMotorStator;
             missileCatcher = GridTerminalSystem.GetBlockWithName(MissileCatcher) as IMyLandingGear;
-            debugMissileLcd = (GridTerminalSystem.GetBlockWithName(ВebugMissileLcd) as IMyTextSurfaceProvider).GetSurface(0);
+            debugMissileLcd = (GridTerminalSystem.GetBlockWithName(DebugMissileLcd) as IMyTextSurfaceProvider).GetSurface(0);
+            debugCarLcd = (GridTerminalSystem.GetBlockWithName(Cockpit) as IMyTextSurfaceProvider).GetSurface(1);
             var debugLcd = (Me).GetSurface(0);
             debugLcd.WriteText(CombineStrings(
                 $"piston:{piston != null}",
@@ -83,7 +93,7 @@ namespace SpaceEngineers.RocketBuilderFire
                 $"missileCatcher:{missileCatcher != null}",
                 $"debugMissileLcd: {debugMissileLcd != null}"
                 ));
-
+            WriteMissileDebug("Reassembled");
         }
         public string CombineStrings(params string[] strings)
         {
@@ -118,31 +128,62 @@ namespace SpaceEngineers.RocketBuilderFire
             }
             if (GuideFireListener.HasPendingMessage)
             {
-                GuideFireListener.AcceptMessage();
-                missileCatcher.Unlock();
-                missileCatcher.AutoLock = false;
+                var message = GuideFireListener.AcceptMessage();
+                if (long.Parse(message.Data.ToString()) == Me.CubeGrid.EntityId)
+                {
+                    missileCatcher.Unlock();
+                    missileCatcher.AutoLock = false;
+                }
             }
             if (args == AutoMissileShoot)
             {
-                var message = new AutoPilotFireMessage()
+                WriteCarDebug($"Missileds: {missileIds.Count}");
+                if (missileIds.Count > 0)
                 {
-                    MissileNumber = 0,
-                    Target = new TargetMessage()
+                    var message = new AutoPilotFireMessage()
                     {
-                        X = -18004.59f,
-                        Y = -55104.97f,
-                        Z = 20685.08f
-                    }
-                };
-                IGC.SendBroadcastMessage(AutoPilotFireTag, message.Serealize(), TransmissionDistance.TransmissionDistanceMax);
+                        MissileNumber = missileIds.First(),
+                        Target = new TargetMessage()
+                        {
+                            X = 54483.03f,
+                            Y = -26995.35f,
+                            Z = 7163.23f
+                        }
+                    };
+                    WriteCarDebug(message.Serealize());
+                    missileIds.Remove(message.MissileNumber);
+                    IGC.SendBroadcastMessage(AutoPilotFireTag, message.Serealize(), TransmissionDistance.TransmissionDistanceMax);
+                }
             }
             if (DebugMissileListener.HasPendingMessage)
             {
-                var message = DebugMissileListener.AcceptMessage();
-                debugMissileLcd.WriteText(message.Data.ToString());
+                try
+                {
+                    var message = DebugMissileListener.AcceptMessage();
+                    WriteMissileDebug(message.Data.ToString());
+                }
+                catch { }
+            }
+            if (ArmoredMissileListener.HasPendingMessage)
+            {
+                var message = ArmoredMissileListener.AcceptMessage();
+                WriteMissileDebug(message.Data.ToString());
+                var missileArmored = MissileArmoredMessage.Deserealize(message.Data.ToString());
+                if (missileArmored.OwnerCarGridId == Me.CubeGrid.EntityId)
+                {
+                    missileIds.Add(missileArmored.MissileGridId);
+                }
             }
         }
-
+        public void WriteMissileDebug(string message)
+        {
+            var debugNumber = Runtime.CurrentCallChainDepth;
+            debugMissileLcd.WriteText($"{debugNumber}\n" + message);
+        }
+        public void WriteCarDebug(string message)
+        {
+            debugCarLcd.WriteText(message);
+        }
 
         private void RefuelFunction()
         {
@@ -157,7 +198,9 @@ namespace SpaceEngineers.RocketBuilderFire
             thruster.Enabled = false;
             var warhead = GridTerminalSystem.GetBlockWithName(MissileWarhead) as IMyWarhead;
             warhead.IsArmed = false;
-
+            var programmingBlock = GridTerminalSystem.GetBlockWithName(MissileProgrammableBlock) as IMyProgrammableBlock;
+            programmingBlock.Enabled = true;
+            programmingBlock.TryRun("");
         }
 
         private void BuildFunction()
@@ -171,8 +214,44 @@ namespace SpaceEngineers.RocketBuilderFire
         public void Save()
         { }
 
+
+        class MissileArmoredMessage
+        {
+            public long OwnerCarGridId { get; set; }
+            public long MissileGridId { get; set; }
+            public string Serealize()
+            {
+                var result = new StringBuilder();
+                result.AppendLine(FormatProperty(nameof(OwnerCarGridId), OwnerCarGridId.ToString()));
+                result.AppendLine(FormatProperty(nameof(MissileGridId), MissileGridId.ToString()));
+                return result.ToString();
+            }
+            public static MissileArmoredMessage Deserealize(string input)
+            {
+                var result = new MissileArmoredMessage();
+                var lines = input.Split('\n');
+                foreach (var item in lines)
+                {
+                    var propLine = item.Split(':');
+                    if (propLine[0] == nameof(OwnerCarGridId))
+                    {
+                        result.OwnerCarGridId = long.Parse(propLine[1]);
+                    }
+                    if (propLine[0] == nameof(MissileGridId))
+                    {
+                        result.MissileGridId = long.Parse(propLine[1]);
+                    }
+                }
+                return result;
+            }
+            public string FormatProperty(string name, string value)
+            {
+                return $"{name}:{value}";
+            }
+        }
         class TargetMessage
         {
+            public TargetMessage() { }
             public float X { get; set; }
             public float Y { get; set; }
             public float Z { get; set; }
@@ -228,8 +307,9 @@ namespace SpaceEngineers.RocketBuilderFire
             {
                 var result = new AutoPilotFireMessage();
                 var lines = input.Split('\n');
-                foreach (var item in lines)
+                for (int i = 0; i < lines.Length; i++)
                 {
+                    string item = lines[i];
                     var propLine = item.Split(':');
                     if (propLine[0] == nameof(MissileNumber))
                     {
@@ -237,7 +317,8 @@ namespace SpaceEngineers.RocketBuilderFire
                     }
                     if (propLine[0] == nameof(Target))
                     {
-                        result.Target = TargetMessage.Deserealize(propLine[1]);
+                        var propLineСomposite = propLine.Where(x => x != propLine.First()).Append("\n" + lines[i + 1]).Append("\n" + lines[i + 2]);
+                        result.Target = TargetMessage.Deserealize(string.Join(":", propLineСomposite));
                     }
                 }
                 return result;
