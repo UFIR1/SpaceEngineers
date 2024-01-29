@@ -53,6 +53,8 @@ namespace SpaceEngineers.RocketBuilderFire.Missile
 
         Target target = null;
 
+        Vector3 cycleCenter;
+
         public Program()
         {
             AutoPilotFireListener = IGC.RegisterBroadcastListener(AutoPilotFireTag);
@@ -129,13 +131,20 @@ namespace SpaceEngineers.RocketBuilderFire.Missile
 
 
                 Start();
+                CalculateCycleCenter();
             }
             if (target != null)
             {
                 Move();
             }
         }
-
+        public void CalculateCycleCenter()
+        {
+            var targetVector = target.Vector; //+ (targetOffset * 1000);
+            var myPosition = remoteControl.GetPosition();
+            var differenceVector = (targetVector - myPosition);
+            cycleCenter = myPosition + (differenceVector / 2);
+        }
         private void Start()
         {
             IGC.SendBroadcastMessage(GuidFireTag, ownerCarProgram.CubeGrid.EntityId.ToString(), TransmissionDistance.TransmissionDistanceMax);
@@ -209,7 +218,9 @@ namespace SpaceEngineers.RocketBuilderFire.Missile
             // var distance = Vector3.Distance(target.Vector, remoteControl.GetPosition());
             // var targetOffset = Vector3.Normalize(target.Vector - Vector3.Zero) * (distance / 9 / Me.CubeGrid.LinearVelocity);
             var targetVector = target.Vector; //+ (targetOffset * 1000);
-            var directionVector = Vector3.Normalize((targetVector - remoteControl.GetPosition()));
+            var myPosition = remoteControl.GetPosition();
+            var differenceVector = (targetVector - myPosition);
+            var directionVector = Vector3.Normalize(differenceVector);
             //directionVector -= Vector3.Up * 0.2f;
             directionVector = Vector3.Normalize(directionVector + (Vector3.Normalize(remoteControl.GetNaturalGravity()) * -0.15f));
             //angle = (remoteControl.WorldMatrix.Up.Dot(targetPosition) / (remoteControl.WorldMatrix.Up.Length() * targetPosition.Length()));
