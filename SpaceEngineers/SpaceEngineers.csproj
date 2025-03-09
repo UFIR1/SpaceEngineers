@@ -99,6 +99,7 @@
     <Compile Include="RadioFacilityController1\Sender\Program.cs" />
     <Compile Include="RocketBuilderFire\Missile\Program.cs" />
     <Compile Include="RocketBuilderFire\Program.cs" />
+    <Compile Include="Shablon - Копировать.cs" />
     <Compile Include="Shablon.cs" />
   </ItemGroup>
   <ItemGroup>

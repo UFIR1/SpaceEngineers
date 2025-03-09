@@ -142,8 +142,8 @@ namespace SpaceEngineers.RocketBuilderFire.Missile
         {
             var targetVector = target.Vector; //+ (targetOffset * 1000);
             var myPosition = remoteControl.GetPosition();
-            var differenceVector = (targetVector - myPosition);
-            cycleCenter = myPosition + (differenceVector / 2);
+            var differenceVector = Vector3.Normalize(targetVector - myPosition);
+            cycleCenter = differenceVector * (Vector3.Distance(targetVector, myPosition) / 2);
         }
         private void Start()
         {
@@ -165,10 +165,10 @@ namespace SpaceEngineers.RocketBuilderFire.Missile
 
             var grav = Vector3D.Normalize(remoteControl.GetNaturalGravity());
             var matrixDown = remoteControl.WorldMatrix.Down;
-            double angle = 0;// = grav.Dot(matrixDown);
-                             //Vector3D axis = HrizonKeeper(grav, matrixDown, angle);
 
-            Vector3D axis = TargetKeeper(grav);
+            //Vector3D axis = LeanerTargetKeeper(grav);
+
+            Vector3D axis = CycleTargetKeeper(grav);
             var asd = SetGyro(axis);
 
 
@@ -211,7 +211,19 @@ namespace SpaceEngineers.RocketBuilderFire.Missile
                    ),
                TransmissionDistance.TransmissionDistanceMax);
         }
-        private Vector3D TargetKeeper(Vector3D grav)
+        private Vector3D CycleTargetKeeper(Vector3D grav)
+        {
+            var myPosition = remoteControl.GetPosition();
+            var differenceVector = (cycleCenter - myPosition);
+            var directionVector = Vector3.Normalize(
+                Vector3.Cross(
+                    Vector3.Cross(remoteControl.GetNaturalGravity(), differenceVector),
+                    differenceVector)
+                );
+            directionVector = Vector3.Normalize(directionVector + (Vector3.Normalize(remoteControl.GetNaturalGravity()) * -0.11f));
+            return directionVector;
+        }
+        private Vector3D LeanerTargetKeeper(Vector3D grav)
         {
             //var axis = grav.Cross(remoteControl.WorldMatrix.Right);
             // axis = Vector3D.Normalize(axis);
@@ -226,17 +238,6 @@ namespace SpaceEngineers.RocketBuilderFire.Missile
             //angle = (remoteControl.WorldMatrix.Up.Dot(targetPosition) / (remoteControl.WorldMatrix.Up.Length() * targetPosition.Length()));
             return directionVector;
         }
-        private static Vector3D HrizonKeeper(ref Vector3D grav, Vector3D matrixDown, double angle)
-        {
-            var axis = grav.Cross(matrixDown);
-            if (angle < 0)
-            {
-                axis = Vector3D.Normalize(axis);
-            }
-
-            return axis;
-        }
-
         public string VectorToString(Vector3 vector)
         {
             return $"{vector.X.ToString("0.00")},{vector.Y.ToString("0.00")},{vector.Z.ToString("0.00")}";

@@ -13,6 +13,8 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game.ModAPI.Ingame;
 using SpaceEngineers.Game.ModAPI.Ingame;
 using Sandbox.Game.GameSystems;
+using VRage.ModAPI;
+using VRage.Game.ModAPI;
 
 namespace Printer
 {
@@ -43,7 +45,6 @@ namespace Printer
             GridTerminalSystem.GetBlockGroupWithName("PrinterPistonsX").GetBlocksOfType(pistonsX);
             GridTerminalSystem.GetBlockGroupWithName("PrinterPistonsY").GetBlocksOfType(pistonsY);
             GridTerminalSystem.GetBlockGroupWithName("PrinterPistonsZ").GetBlocksOfType(pistonsZ);
-
             rotorX = (IMyMotorStator)GridTerminalSystem.GetBlockWithName("PrinterRotorX");
             rotorY = (IMyMotorStator)GridTerminalSystem.GetBlockWithName("PrinterRotorY");
 

@@ -27,7 +27,7 @@ namespace SpaceEngineers.RocketBuilderFire
         const string RemoveConnector = nameof(RemoveConnector);
         const string PrepareToShoot = nameof(PrepareToShoot);
         const string AutoMissileShoot = nameof(AutoMissileShoot);
-
+        Sandbox.Common.ObjectBuilders.MyObjectBuilder_BatteryBlock
 
         //
         const string Cockpit = "Кокпит";
